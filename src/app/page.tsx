@@ -6,6 +6,8 @@ import { Todo } from '@/types/todo'
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [newTodo, setNewTodo] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
 
   useEffect(() => {
     fetchTodos()
@@ -18,7 +20,7 @@ export default function Home() {
   }
 
   const createTodo = async () => {
-    if (!newTodo) return
+    if (!newTodo.trim()) return
     const res = await fetch('/api/todos', {
       method: 'POST',
       body: JSON.stringify({ title: newTodo }),
@@ -42,6 +44,22 @@ export default function Home() {
     setTodos(todos.filter(todo => todo.id !== id))
   }
 
+  const startEditing = (todo: Todo) => {
+    setEditingId(todo.id)
+    setEditTitle(todo.title)
+  }
+
+  const saveEdit = async (id: string) => {
+    const res = await fetch(`/api/todos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ title: editTitle }),
+    })
+    const updated = await res.json()
+    setTodos(todos.map(todo => (todo.id === id ? updated : todo)))
+    setEditingId(null)
+    setEditTitle('')
+  }
+
   return (
     <main className="p-6 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Todo App</h1>
@@ -59,12 +77,25 @@ export default function Home() {
       <ul>
         {todos.map((todo) => (
           <li key={todo.id} className="flex justify-between items-center border-b py-2">
-            <span
-              className={`flex-1 cursor-pointer ${todo.is_complete ? 'line-through text-gray-500' : ''}`}
-              onClick={() => toggleComplete(todo.id, todo.is_complete)}
-            >
-              {todo.title}
-            </span>
+            {editingId === todo.id ? (
+              <input
+                className="flex-1 border p-1 mr-2"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+              />
+            ) : (
+              <span
+                className={`flex-1 cursor-pointer ${todo.is_complete ? 'line-through text-gray-500' : ''}`}
+                onClick={() => toggleComplete(todo.id, todo.is_complete)}
+              >
+                {todo.title}
+              </span>
+            )}
+            {editingId === todo.id ? (
+              <button className="text-green-600 mr-2" onClick={() => saveEdit(todo.id)}>Save</button>
+            ) : (
+              <button className="text-yellow-500 mr-2" onClick={() => startEditing(todo)}>Edit</button>
+            )}
             <button className="text-red-500" onClick={() => deleteTodo(todo.id)}>Delete</button>
           </li>
         ))}

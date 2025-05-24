@@ -1,9 +1,11 @@
-// app/api/todos/[id]/route.ts
 import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const { id } = params
+
+// PUT /api/todos/[id]
+export async function PUT(req: NextRequest, context: { params:Promise< { id: string }> }) {
+  const { id } = await(context.params)
   const { title, is_complete } = await req.json()
 
   const { data, error } = await supabase
@@ -13,11 +15,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     .select()
 
   if (error) return NextResponse.json({ error }, { status: 500 })
-  return NextResponse.json(data[0])
+  return NextResponse.json(data?.[0])
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  const { id } = params
+// DELETE /api/todos/[id]
+export async function DELETE(req: NextRequest, context: { params:Promise< { id: string }> }) {
+  const { id } = await(context.params)
+
   const { error } = await supabase.from('todos').delete().eq('id', id)
 
   if (error) return NextResponse.json({ error }, { status: 500 })
