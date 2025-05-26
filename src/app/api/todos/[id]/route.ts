@@ -1,29 +1,71 @@
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabaseServer'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+interface Params {
+  params: { id: string }
+}
 
 // PUT /api/todos/[id]
-export async function PUT(req: NextRequest, context: { params:Promise< { id: string }> }) {
-  const { id } = await(context.params)
-  const { title, is_complete } = await req.json()
+export async function PUT(req: NextRequest, { params }: Params) {
+  const supabase = createServerSupabaseClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  const { data, error } = await supabase
-    .from('todos')
-    .update({ title, is_complete })
-    .eq('id', id)
-    .select()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  if (error) return NextResponse.json({ error }, { status: 500 })
-  return NextResponse.json(data?.[0])
+  try {
+    const { title, is_complete } = await req.json()
+
+    const { data, error } = await supabase
+      .from('todos')
+      .update({ title, is_complete })
+      .eq('id', params.id)
+      .eq('user_id', session.user.id) // 🔐 Only update if user owns it
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Update Error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
+  } catch (err: any) {
+    console.error('Unhandled PUT Error:', err)
+    return NextResponse.json({ error: 'Unexpected server error' }, { status: 500 })
+  }
 }
 
 // DELETE /api/todos/[id]
-export async function DELETE(req: NextRequest, context: { params:Promise< { id: string }> }) {
-  const { id } = await(context.params)
+export async function DELETE(_: NextRequest, { params }: Params) {
+  const supabase = createServerSupabaseClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  const { error } = await supabase.from('todos').delete().eq('id', id)
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
-  if (error) return NextResponse.json({ error }, { status: 500 })
-  return NextResponse.json({ message: 'Deleted' })
+  try {
+    const { error } = await supabase
+      .from('todos')
+      .delete()
+      .eq('id', params.id)
+      .eq('user_id', session.user.id) // 🔐 Only delete if owned by user
+
+    if (error) {
+      console.error('Delete Error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ message: 'Deleted' })
+  } catch (err: any) {
+    console.error('Unhandled DELETE Error:', err)
+    return NextResponse.json({ error: 'Unexpected server error' }, { status: 500 })
+  }
 }
