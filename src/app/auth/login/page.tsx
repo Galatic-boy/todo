@@ -1,7 +1,8 @@
 // app/login/page.tsx or app/components/LoginForm.tsx
 'use client'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/supabaseClient'
+const supabase = createClient()
 
 export default function LoginForm() {
   const [email, setEmail] = useState('')

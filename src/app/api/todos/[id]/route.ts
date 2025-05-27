@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 interface Params {
-  params: { id: string }
+  params:Promise< { id: string }>
 }
 
 // PUT /api/todos/[id]
@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const { data, error } = await supabase
       .from('todos')
       .update({ title, is_complete })
-      .eq('id', params.id)
+      .eq('id', (await params).id)
       .eq('user_id', session.user.id) // 🔐 Only update if user owns it
       .select()
       .single()
@@ -55,7 +55,7 @@ export async function DELETE(_: NextRequest, { params }: Params) {
     const { error } = await supabase
       .from('todos')
       .delete()
-      .eq('id', params.id)
+      .eq('id', (await params).id)
       .eq('user_id', session.user.id) // 🔐 Only delete if owned by user
 
     if (error) {
