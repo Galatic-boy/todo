@@ -1,3 +1,4 @@
+// src/app/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -9,13 +10,12 @@ const supabase = createClient()
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([])
-  const [newTodo, setNewTodo] = useState('')
+  const [newTodo, setNewTodo] = useState<string>('')          // always a string
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
+  const [editTitle, setEditTitle] = useState<string>('')      // always a string
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  // ✅ Check auth session
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession()
@@ -32,21 +32,19 @@ export default function Home() {
   const fetchTodos = async () => {
     const res = await fetch('/api/todos')
     const data = await res.json()
-
     if (Array.isArray(data)) {
       setTodos(data)
     } else {
       console.error('Invalid todos response:', data)
-      setTodos([]) // fallback to empty array
+      setTodos([])
     }
   }
-
 
   const createTodo = async () => {
     if (!newTodo.trim()) return
     const res = await fetch('/api/todos', {
       method: 'POST',
-      body: JSON.stringify({ title: newTodo }),
+      body: JSON.stringify({ title: newTodo.trim() }),
     })
     const data = await res.json()
     setTodos([data, ...todos])
@@ -73,9 +71,10 @@ export default function Home() {
   }
 
   const saveEdit = async (id: string) => {
+    if (!editTitle.trim()) return
     const res = await fetch(`/api/todos/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ title: editTitle }),
+      body: JSON.stringify({ title: editTitle.trim() }),
     })
     const updated = await res.json()
     setTodos(todos.map(todo => (todo.id === id ? updated : todo)))
@@ -94,7 +93,10 @@ export default function Home() {
     <main className="p-6 max-w-xl mx-auto">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Todo App</h1>
-        <button onClick={handleLogout} className="text-sm text-red-500 border px-2 py-1 rounded">
+        <button
+          onClick={handleLogout}
+          className="text-sm text-red-500 border px-2 py-1 rounded"
+        >
           Sign Out
         </button>
       </div>
@@ -102,38 +104,63 @@ export default function Home() {
       <div className="flex gap-2 mb-4">
         <input
           className="border p-2 flex-1"
-          value={newTodo}
+          value={newTodo}                 // always defined
           onChange={(e) => setNewTodo(e.target.value)}
           placeholder="Add new todo"
         />
-        <button className="bg-blue-500 text-white px-4 py-2" onClick={createTodo}>
+        <button
+          className="bg-blue-500 text-white px-4 py-2"
+          onClick={createTodo}
+        >
           Add
         </button>
       </div>
 
       <ul>
-        {todos.map((todo) => (  
-          <li key={todo.id} className="flex justify-between items-center border-b py-2">
+        {todos.map(todo => (
+          <li
+            key={todo.id}                // <-- unique key here
+            className="flex justify-between items-center border-b py-2"
+          >
             {editingId === todo.id ? (
               <input
                 className="flex-1 border p-1 mr-2"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
+                value={editTitle}        // always defined
+                onChange={e => setEditTitle(e.target.value)}
               />
             ) : (
               <span
-                className={`flex-1 cursor-pointer ${todo.is_complete ? 'line-through text-gray-500' : ''}`}
+                className={`flex-1 cursor-pointer ${
+                  todo.is_complete ? 'line-through text-gray-500' : ''
+                }`}
                 onClick={() => toggleComplete(todo.id, todo.is_complete)}
               >
                 {todo.title}
               </span>
             )}
+
             {editingId === todo.id ? (
-              <button className="text-green-600 mr-2" onClick={() => saveEdit(todo.id)}>Save</button>
+              <button
+                className="text-green-600 mr-2"
+                onClick={() => saveEdit(todo.id)}
+              >
+                Save
+              </button>
             ) : (
-              <button className="text-yellow-500 mr-2" onClick={() => startEditing(todo)}>Edit</button>
+              <button
+                className="text-yellow-500 mr-2"
+                onClick={() => startEditing(todo)}
+              >
+                Edit
+              </button>
             )}
-            <button className="text-red-500" onClick={() => deleteTodo(todo.id)}>Delete</button>
+
+            <button
+              className="text-red-500"
+              onClick={() => deleteTodo(todo.id)}
+            >
+              Delete
+            </button>
           </li>
         ))}
       </ul>

@@ -1,50 +1,57 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabaseClient'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthProvider';
+import { createClient } from '@/lib/supabaseClient';
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [errorMsg, setErrorMsg] = useState('')
-  const router = useRouter()
+export default function SignInPage() {
+  const { session } = useAuth();
+  const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-    const supabase = createClient()
+  useEffect(() => {
+    if (session) {
+      router.push('/'); // Redirect to home/dashboard if already logged in
+    }
+  }, [session]);
 
-    const { error } = await supabase.auth.signInWithPassword({
+  const handleLogin = async () => {
+    const { error } = await createClient().auth.signInWithPassword({
       email,
       password,
-    })
+    });
 
     if (error) {
-      setErrorMsg(error.message)
-    } else {
-      router.push('/') // ✅ Redirect after login
+      console.error('Login error:', error.message);
+      return;
     }
-  }
+
+    // Successful login will trigger useEffect to redirect
+  };
 
   return (
-    <form onSubmit={handleLogin}>
+    <div className="p-4">
+      <h1 className="text-xl mb-4">Sign In</h1>
       <input
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-        required
+        className="block mb-2 border p-2"
       />
       <input
         type="password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
-        required
+        className="block mb-2 border p-2"
       />
-      <button type="submit">Login</button>
-      {errorMsg && <p>{errorMsg}</p>}
-    </form>
-  )
+      <button onClick={handleLogin} className="bg-blue-500 text-white p-2 rounded">
+        Sign In
+      </button>
+    </div>
+  );
 }

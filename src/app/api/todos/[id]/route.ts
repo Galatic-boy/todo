@@ -1,6 +1,9 @@
+export const runtime = 'nodejs'          // ensure Node.js runtime
+export const dynamic = 'force-dynamic'
 import { createServerSupabaseClient } from '@/lib/supabaseServer'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+
 
 interface Params {
   params:Promise< { id: string }>
