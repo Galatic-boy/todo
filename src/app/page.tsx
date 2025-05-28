@@ -32,8 +32,15 @@ export default function Home() {
   const fetchTodos = async () => {
     const res = await fetch('/api/todos')
     const data = await res.json()
-    setTodos(data)
+
+    if (Array.isArray(data)) {
+      setTodos(data)
+    } else {
+      console.error('Invalid todos response:', data)
+      setTodos([]) // fallback to empty array
+    }
   }
+
 
   const createTodo = async () => {
     if (!newTodo.trim()) return
@@ -105,7 +112,7 @@ export default function Home() {
       </div>
 
       <ul>
-        {todos.map((todo) => (
+        {todos.map((todo) => (  
           <li key={todo.id} className="flex justify-between items-center border-b py-2">
             {editingId === todo.id ? (
               <input
@@ -130,6 +137,8 @@ export default function Home() {
           </li>
         ))}
       </ul>
+
+      {todos.length === 0 && <p>No todos found or failed to load.</p>}
     </main>
   )
 }
